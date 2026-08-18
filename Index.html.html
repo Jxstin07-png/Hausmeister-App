@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hausmeister App – Prototyp</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f3f4f6;color:#17202a}
+header{background:#fff;padding:22px 20px 16px;border-bottom:1px solid #ddd;position:sticky;top:0;z-index:2}
+h1{margin:0;font-size:25px} .date{color:#69727d;margin-top:4px}
+main{max-width:900px;margin:auto;padding:18px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.card{background:white;border:1px solid #ddd;border-radius:18px;padding:22px;min-height:125px;box-shadow:0 2px 8px #0000000a;cursor:pointer}
+.icon{font-size:32px}.card h2{font-size:18px;margin:9px 0 3px}.card p{margin:0;color:#68727d}
+.panel{display:none;background:white;border:1px solid #ddd;border-radius:18px;padding:20px;margin-top:18px}
+.panel.active{display:block}label{display:block;font-weight:600;margin:14px 0 6px}
+input,select,textarea{width:100%;font:inherit;padding:12px;border:1px solid #cbd0d6;border-radius:10px}
+textarea{min-height:100px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{border:0;border-radius:11px;padding:12px 16px;font:inherit;font-weight:650;cursor:pointer;margin-top:14px}
+.primary{background:#17202a;color:#fff}.secondary{background:#e9edf1}.danger{background:#fee2e2}
+.task{padding:12px 0;border-bottom:1px solid #eee}.task input{width:auto;margin-right:10px}
+.status{margin-top:14px;padding:12px;border-radius:10px;background:#eaf7ed;display:none}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏠 Hausmeister App</h1>
+  <div class="date" id="date"></div>
+</header>
+<main>
+  <div class="grid">
+    <div class="card" onclick="show('damage')"><div class="icon">📸</div><h2>Schaden melden</h2><p>Schaden erfassen & fotografieren</p></div>
+    <div class="card" onclick="show('tasks')"><div class="icon">📋</div><h2>Meine Aufgaben</h2><p>Tägliche Aufgaben abhaken</p></div>
+    <div class="card" onclick="show('objects')"><div class="icon">🏢</div><h2>Objekte</h2><p>Häuser & Bereiche</p></div>
+    <div class="card" onclick="show('tenants')"><div class="icon">👥</div><h2>Mieter</h2><p>Wohnungen & Kontaktdaten</p></div>
+    <div class="card" onclick="show('docs')"><div class="icon">📷</div><h2>Dokumentation</h2><p>Gespeicherte Einträge</p></div>
+    <div class="card" onclick="show('reports')"><div class="icon">📧</div><h2>Berichte</h2><p>Tagesbericht vorbereiten</p></div>
+  </div>
+
+  <section id="damage" class="panel">
+    <h2>📸 Schaden melden</h2>
+    <div class="row">
+      <div><label>Objekt</label><select id="obj"><option>Haus 1 – 21 Etagen</option><option>Haus 2 – 18 Etagen</option></select></div>
+      <div><label>Bereich / Wohnung</label><input id="area" placeholder="z. B. Wohnung 5. OG"></div>
+    </div>
+    <label>Mieter</label><input id="tenant" placeholder="Name (optional)">
+    <label>Priorität</label><select id="priority"><option>🟡 Normal</option><option>🔴 Dringend</option><option>🟢 Niedrig</option></select>
+    <label>Beschreibung</label><textarea id="desc" placeholder="Was ist passiert?"></textarea>
+    <label>Foto</label><input id="photo" type="file" accept="image/*" capture="environment">
+    <button class="primary" onclick="saveDamage()">Schaden speichern</button>
+    <button class="secondary" onclick="closePanels()">Zurück</button>
+    <div class="status" id="saved">✓ Schaden wurde lokal gespeichert.</div>
+  </section>
+
+  <section id="tasks" class="panel">
+    <h2>📋 Meine Aufgaben</h2>
+    <div class="task"><input type="checkbox"> Außenrunde / Außenbereich kontrollieren</div>
+    <div class="task"><input type="checkbox"> Foyer auf groben Schmutz kontrollieren</div>
+    <div class="task"><input type="checkbox"> Aufzüge kontrollieren</div>
+    <div class="task"><input type="checkbox"> Müllräume & Müllschächte kontrollieren</div>
+    <div class="task"><input type="checkbox"> Grünpflege / Rasen kontrollieren</div>
+    <div class="task"><input type="checkbox"> Abstimmung mit Concierge / Nachtkontrolle</div>
+    <button class="secondary" onclick="closePanels()">Zurück</button>
+  </section>
+
+  <section id="objects" class="panel"><h2>🏢 Objekte</h2><p><b>Haus 1</b> – 21 Etagen</p><p><b>Haus 2</b> – 18 Etagen</p><button class="secondary" onclick="closePanels()">Zurück</button></section>
+  <section id="tenants" class="panel"><h2>👥 Mieter</h2><p>Die Mieterdatenbank kommt im nächsten Schritt.</p><button class="secondary" onclick="closePanels()">Zurück</button></section>
+  <section id="docs" class="panel"><h2>📷 Dokumentation</h2><div id="docsList"><p>Noch keine Einträge.</p></div><button class="secondary" onclick="closePanels()">Zurück</button></section>
+  <section id="reports" class="panel"><h2>📧 Berichte</h2><p>Der Tagesbericht wird im nächsten Schritt aus Aufgaben und Schadensmeldungen erzeugt.</p><button class="secondary" onclick="closePanels()">Zurück</button></section>
+</main>
+<script>
+document.getElementById("date").textContent=new Date().toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
+function show(id){closePanels();document.getElementById(id).classList.add("active");window.scrollTo({top:0,behavior:"smooth"})}
+function closePanels(){document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"))}
+function saveDamage(){
+ const item={date:new Date().toLocaleString("de-DE"),obj:obj.value,area:area.value,tenant:tenant.value,priority:priority.value,desc:desc.value};
+ const data=JSON.parse(localStorage.getItem("damage")||"[]");data.unshift(item);localStorage.setItem("damage",JSON.stringify(data));
+ document.getElementById("saved").style.display="block";renderDocs();
+}
+function renderDocs(){
+ const data=JSON.parse(localStorage.getItem("damage")||"[]");const el=document.getElementById("docsList");
+ if(!data.length){el.innerHTML="<p>Noch keine Einträge.</p>";return}
+ el.innerHTML=data.map(x=>`<div style="padding:12px 0;border-bottom:1px solid #eee"><b>${x.priority} – ${x.area||"Bereich nicht angegeben"}</b><br>${x.obj}<br>${x.desc||"Keine Beschreibung"}<br><small>${x.date}</small></div>`).join("");
+}
+renderDocs();
+</script>
+</body>
+</html>
