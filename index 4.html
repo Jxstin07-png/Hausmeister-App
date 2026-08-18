@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17202a">
+<title>Hausmeister App – Version 2</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f3f5f7;color:#17202a}
+header{background:#17202a;color:white;padding:20px 18px;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px #0002}
+header h1{margin:0;font-size:24px}
+.date{font-size:14px;opacity:.75;margin-top:4px}
+main{max-width:1000px;margin:auto;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.card{background:white;border:1px solid #dfe3e7;border-radius:16px;padding:20px;min-height:130px;box-shadow:0 2px 8px #0000000a;cursor:pointer}
+.card:active{transform:scale(.99)}
+.icon{font-size:30px}
+.card h2{font-size:18px;margin:8px 0 4px}
+.card p{margin:0;color:#667085;font-size:14px}
+.panel{display:none;background:white;border:1px solid #dfe3e7;border-radius:16px;padding:18px;margin-top:16px}
+.panel.active{display:block}
+label{display:block;font-weight:600;margin:14px 0 6px}
+input,select,textarea{width:100%;font:inherit;padding:12px;border:1px solid #cbd2d9;border-radius:10px;background:white}
+textarea{min-height:110px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{border:0;border-radius:11px;padding:13px 16px;font:inherit;font-weight:650;cursor:pointer;margin:8px 6px 0 0}
+.primary{background:#17202a;color:white}
+.secondary{background:#e8edf2;color:#17202a}
+.danger{background:#fee2e2;color:#991b1b}
+.success{background:#dcfce7;color:#166534}
+.status{display:none;margin-top:14px;padding:12px;border-radius:10px;background:#dcfce7;color:#166534}
+.item{padding:14px 0;border-bottom:1px solid #e5e7eb}
+.item:last-child{border-bottom:0}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;margin-left:6px}
+.normal{background:#fef3c7;color:#92400e}.urgent{background:#fee2e2;color:#991b1b}.veryurgent{background:#fecaca;color:#7f1d1d}
+.task{padding:11px 0;border-bottom:1px solid #eee}
+.task input{width:auto;margin-right:8px}
+.photo-preview{max-width:100%;max-height:260px;border-radius:12px;margin-top:10px;display:none}
+.small{font-size:13px;color:#667085}
+.empty{color:#667085;padding:12px 0}
+@media(max-width:650px){
+ .grid,.row{grid-template-columns:1fr}
+ main{padding:12px}
+ .card{min-height:110px}
+ header{padding:17px 14px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏠 Hausmeister App</h1>
+  <div class="date" id="date"></div>
+</header>
+
+<main>
+  <div class="grid">
+    <div class="card" onclick="show('damage')"><div class="icon">🚨</div><h2>Schaden melden</h2><p>Schäden erfassen und Foto hinzufügen</p></div>
+    <div class="card" onclick="show('tasks')"><div class="icon">☑️</div><h2>Meine Aufgaben</h2><p>Tägliche Aufgaben abhaken</p></div>
+    <div class="card" onclick="show('objects')"><div class="icon">🏢</div><h2>Objekte</h2><p>Häuser und Bereiche verwalten</p></div>
+    <div class="card" onclick="show('tenants')"><div class="icon">👥</div><h2>Mieter</h2><p>Mieterinformationen speichern</p></div>
+    <div class="card" onclick="show('docs')"><div class="icon">📋</div><h2>Dokumentation</h2><p>Gespeicherte Schadensmeldungen</p></div>
+    <div class="card" onclick="show('reports')"><div class="icon">📊</div><h2>Berichte</h2><p>Tagesbericht erstellen</p></div>
+  </div>
+
+  <section id="damage" class="panel">
+    <h2>🚨 Schaden melden</h2>
+    <div class="row">
+      <div><label>Objekt</label><select id="obj"><option>Kienbergstraße 1</option><option>Kienbergstraße 3</option></select></div>
+      <div><label>Bereich / Wohnung</label><input id="area" placeholder="z. B. Wohnung 5. OG, Keller, Foyer"></div>
+    </div>
+    <label>Mieter</label><input id="tenant" placeholder="Name (optional)">
+    <label>Priorität</label>
+    <select id="priority"><option value="Normal">🟡 Normal</option><option value="Dringend">🔴 Dringend</option><option value="Sehr dringend">⛔ Sehr dringend</option></select>
+    <label>Beschreibung</label><textarea id="desc" placeholder="Was ist passiert? Was muss gemacht werden?"></textarea>
+    <label>Foto</label><input id="photo" type="file" accept="image/*" capture="environment" onchange="previewPhoto(event)">
+    <img id="preview" class="photo-preview">
+    <button class="primary" type="button" onclick="saveDamage()">💾 Schaden speichern</button>
+    <button class="secondary" onclick="closePanels()">Zurück</button>
+    <div class="status" id="saved">Schaden wurde gespeichert.</div>
+  </section>
+
+  <section id="tasks" class="panel">
+    <h2>☑️ Meine Aufgaben</h2>
+    <div id="taskList"></div>
+    <button class="secondary" onclick="resetTasks()">Aufgaben zurücksetzen</button>
+    <button class="secondary" onclick="closePanels()">Zurück</button>
+  </section>
+
+  <section id="objects" class="panel">
+    <h2>🏢 Objekte</h2>
+    <div class="item"><b>Kienbergstraße 1</b><br><span class="small">Außenbereich · Foyer · Aufzüge</span></div>
+    <div class="item"><b>Kienbergstraße 3</b><br><span class="small">Außenbereich · Foyer · Aufzüge</span></div>
+    <button class="secondary" onclick="closePanels()">Zurück</button>
+  </section>
+
+  <section id="tenants" class="panel">
+    <h2>👥 Mieter</h2>
+    <p class="small">Hier kann später eine vollständige Mieterdatenbank ergänzt werden.</p>
+    <div class="row">
+      <div><label>Name</label><input id="newTenant" placeholder="Vor- und Nachname"></div>
+      <div><label>Wohnung</label><input id="newTenantArea" placeholder="z. B. 7. OG links"></div>
+    </div>
+    <button class="primary" onclick="saveTenant()">Mieter speichern</button>
+    <div id="tenantList"></div>
+    <button class="secondary" onclick="closePanels()">Zurück</button>
+  </section>
+
+  <section id="docs" class="panel">
+    <h2>📋 Dokumentation</h2>
+    <div id="docsList"></div>
+    <button class="secondary" onclick="closePanels()">Zurück</button>
+  </section>
+
+  <section id="reports" class="panel">
+    <h2>📊 Tagesbericht</h2>
+    <p class="small">Aus den heutigen Schadensmeldungen wird automatisch ein Bericht erstellt.</p>
+    <textarea id="reportText" readonly></textarea>
+    <button class="primary" onclick="shareReport()">Bericht teilen</button>
+    <button class="secondary" onclick="closePanels()">Zurück</button>
+  </section>
+</main>
+
+<script>
+const TASKS=[
+"Außenrunde / Außenbereich kontrollieren",
+"Foyer auf groben Schmutz kontrollieren",
+"Aufzüge kontrollieren",
+"Müllräume & Müllschächte kontrollieren",
+"Grünpflege / Rasen kontrollieren",
+"Abstimmung mit Concierge / Nachtkontrolle",
+"Wenn möglich tägliche Abstimmung mit der Verwaltung"
+];
+
+document.getElementById("date").textContent=new Date().toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
+
+function show(id){
+ closePanels();
+ document.getElementById(id).classList.add("active");
+ if(id==="tasks") renderTasks();
+ if(id==="docs") renderDocs();
+ if(id==="tenants") renderTenants();
+ if(id==="reports") makeReport();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+function closePanels(){document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"))}
+
+function getDamages(){return JSON.parse(localStorage.getItem("damages")||"[]")}
+function saveDamages(a){localStorage.setItem("damages",JSON.stringify(a))}
+
+function previewPhoto(e){
+ const file=e.target.files[0], img=document.getElementById("preview");
+ if(!file){img.style.display="none";return}
+ const reader=new FileReader();
+ reader.onload=()=>{img.src=reader.result;img.style.display="block"};
+ reader.readAsDataURL(file);
+}
+
+function saveDamage(){
+ try{
+   const objEl=document.getElementById("obj");
+   const areaEl=document.getElementById("area");
+   const tenantEl=document.getElementById("tenant");
+   const priorityEl=document.getElementById("priority");
+   const descEl=document.getElementById("desc");
+   const photoEl=document.getElementById("photo");
+
+   const base={
+     date:new Date().toLocaleString("de-DE"),
+     obj:objEl.value,
+     area:areaEl.value.trim(),
+     tenant:tenantEl.value.trim(),
+     priority:priorityEl.value,
+     desc:descEl.value.trim(),
+     photo:""
+   };
+
+   if(!base.area && !base.desc){
+     alert("Bitte mindestens Bereich/Wohnung oder Beschreibung eintragen.");
+     return;
+   }
+
+   const finish=(photo)=>{
+     try{
+       base.photo=photo||"";
+       const data=getDamages();
+       data.unshift(base);
+       saveDamages(data);
+
+       document.getElementById("saved").textContent="✅ Schaden wurde gespeichert!";
+       document.getElementById("saved").style.display="block";
+
+       areaEl.value="";
+       tenantEl.value="";
+       descEl.value="";
+       photoEl.value="";
+       document.getElementById("preview").src="";
+       document.getElementById("preview").style.display="none";
+
+       renderDocs();
+       makeReport();
+
+       setTimeout(()=>{
+         document.getElementById("saved").style.display="none";
+       },3000);
+     }catch(err){
+       alert("Der Schaden konnte nicht gespeichert werden. Bitte versuche es ohne Foto.\n\nFehler: "+err.message);
+     }
+   };
+
+   if(photoEl.files && photoEl.files[0]){
+     compressPhoto(photoEl.files[0], finish);
+   }else{
+     finish("");
+   }
+ }catch(err){
+   alert("Fehler beim Speichern: "+err.message);
+ }
+}
+
+function compressPhoto(file, callback){
+ const reader=new FileReader();
+ reader.onload=function(){
+   const img=new Image();
+   img.onload=function(){
+     const max=1400;
+     let w=img.naturalWidth, h=img.naturalHeight;
+     if(w>max || h>max){
+       if(w>=h){h=Math.round(h*max/w);w=max}
+       else{w=Math.round(w*max/h);h=max}
+     }
+     const canvas=document.createElement("canvas");
+     canvas.width=w; canvas.height=h;
+     const ctx=canvas.getContext("2d");
+     ctx.drawImage(img,0,0,w,h);
+     const compressed=canvas.toDataURL("image/jpeg",0.72);
+     callback(compressed);
+   };
+   img.onerror=()=>alert("Das Foto konnte nicht verarbeitet werden. Bitte ein anderes Foto versuchen.");
+   img.src=reader.result;
+ };
+ reader.onerror=()=>alert("Das Foto konnte nicht gelesen werden. Bitte versuche es erneut.");
+ reader.readAsDataURL(file);
+}
+ }catch(err){
+   alert("Fehler beim Speichern: "+err.message);
+ }
+}
+
+function renderDocs(){
+ const list=document.getElementById("docsList"),data=getDamages();
+ if(!data.length){list.innerHTML='<div class="empty">Noch keine Schadensmeldungen gespeichert.</div>';return}
+ list.innerHTML=data.map((x,i)=>{
+   const cls=x.priority==="Sehr dringend"?"veryurgent":x.priority==="Dringend"?"urgent":"normal";
+   return `<div class="item"><b>${escapeHtml(x.obj)}</b> · ${escapeHtml(x.area||"—")}<span class="badge ${cls}">${escapeHtml(x.priority)}</span><br>
+   <span class="small">${escapeHtml(x.date)}${x.tenant?" · Mieter: "+escapeHtml(x.tenant):""}</span>
+   <p>${escapeHtml(x.desc||"Keine Beschreibung")}</p>
+   ${x.photo?`<img src="${x.photo}" style="max-width:180px;border-radius:10px">`:""}
+   <br><button class="danger" onclick="deleteDamage(${i})">Löschen</button></div>`;
+ }).join("");
+}
+function deleteDamage(i){if(confirm("Schadensmeldung wirklich löschen?")){const d=getDamages();d.splice(i,1);saveDamages(d);renderDocs();makeReport()}}
+
+function renderTasks(){
+ const saved=JSON.parse(localStorage.getItem("tasks")||"[]");
+ document.getElementById("taskList").innerHTML=TASKS.map((t,i)=>`<div class="task"><label><input type="checkbox" ${saved[i]?"checked":""} onchange="taskChange(${i},this.checked)"> ${t}</label></div>`).join("");
+}
+function taskChange(i,v){const a=JSON.parse(localStorage.getItem("tasks")||"[]");a[i]=v;localStorage.setItem("tasks",JSON.stringify(a))}
+function resetTasks(){localStorage.removeItem("tasks");renderTasks()}
+
+function saveTenant(){
+ const name=document.getElementById("newTenant").value.trim(), area=document.getElementById("newTenantArea").value.trim();
+ if(!name)return alert("Bitte einen Namen eintragen.");
+ const a=JSON.parse(localStorage.getItem("tenants")||"[]");a.push({name,area});localStorage.setItem("tenants",JSON.stringify(a));
+ document.getElementById("newTenant").value="";document.getElementById("newTenantArea").value="";renderTenants();
+}
+function renderTenants(){
+ const a=JSON.parse(localStorage.getItem("tenants")||"[]");
+ document.getElementById("tenantList").innerHTML=a.length?a.map((x,i)=>`<div class="item"><b>${escapeHtml(x.name)}</b><br>${escapeHtml(x.area||"—")} <button class="danger" onclick="deleteTenant(${i})">Löschen</button></div>`).join(""):'<div class="empty">Noch keine Mieter gespeichert.</div>';
+}
+function deleteTenant(i){const a=JSON.parse(localStorage.getItem("tenants")||"[]");a.splice(i,1);localStorage.setItem("tenants",JSON.stringify(a));renderTenants()}
+
+function makeReport(){
+ const d=getDamages();
+ const today=new Date().toLocaleDateString("de-DE");
+ const todays=d.filter(x=>x.date.startsWith(today));
+ let text=`HAUSMEISTER – TAGESBERICHT\n${today}\n\n`;
+ text+=`Schadensmeldungen heute: ${todays.length}\n\n`;
+ todays.forEach((x,i)=>text+=`${i+1}. ${x.priority} – ${x.obj} – ${x.area||"Bereich nicht angegeben"}\nMieter: ${x.tenant||"—"}\n${x.desc||"Keine Beschreibung"}\n\n`);
+ text+=`Aufgabenstatus: ${getCompletedTasks()}/${TASKS.length} erledigt`;
+ document.getElementById("reportText").value=text;
+}
+function getCompletedTasks(){return JSON.parse(localStorage.getItem("tasks")||"[]").filter(Boolean).length}
+async function shareReport(){
+ const text=document.getElementById("reportText").value;
+ if(navigator.share){try{await navigator.share({title:"Hausmeister Tagesbericht",text})}catch(e){}}
+ else{await navigator.clipboard.writeText(text);alert("Bericht wurde in die Zwischenablage kopiert.")}}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+
+renderTasks();
+</script>
+</body>
+</html>
